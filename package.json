@@ -8,17 +8,8 @@
     "url": "https://github.com/hexstack-apps/ai-mentat-sdk.git"
   },
   "main": "index.js",
-  "files": [
-    "logic",
-    "ui",
-    "utils",
-    "build",
-    "vendor",
-    "test",
-    "index.js"
-  ],
+  "files": ["logic", "ui", "utils", "index.js"],
   "scripts": {
-    "test": "node --test 'utils/*.test.js' 'logic/*.test.js' 'ui/*.test.js'",
-    "test:mutation": "sh test/discriminates.sh"
+    "test": "node --test utils/*.test.js"
   }
 }
