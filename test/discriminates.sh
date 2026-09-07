@@ -103,6 +103,31 @@ mutate "settings:set accepts a non-object patch" logic/settings.js \
   "    if (false) {"
 
 
+# ── logic/shell.js ────────────────────────────────────────────────────────
+
+mutate "open-external accepts any scheme (file:// becomes launchable)" logic/shell.js \
+  "    if (parsed.protocol !== HTTPS) return { success: false };" \
+  "    ;"
+
+mutate "open-external accepts plain http" logic/shell.js \
+  "const HTTPS = 'https:';" \
+  "const HTTPS = 'http:';"
+
+mutate "an unparseable url throws out of the handler" logic/shell.js \
+  "    try {
+      parsed = new URL(url);
+    } catch {
+      return { success: false };
+    }" \
+  "    parsed = new URL(url);"
+
+mutate "openPathHandler lets the renderer choose the path" logic/shell.js \
+  "  return async () => {
+    await shell.openPath(dirPath);" \
+  "  return async (_, fromRenderer) => {
+    await shell.openPath(fromRenderer || dirPath);"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
