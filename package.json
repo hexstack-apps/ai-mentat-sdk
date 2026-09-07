@@ -12,6 +12,9 @@
     "logic",
     "ui",
     "utils",
+    "build",
+    "vendor",
+    "test",
     "index.js"
   ],
   "scripts": {
