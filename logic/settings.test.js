@@ -16,6 +16,7 @@ function fakeFs(initial = {}) {
       return files[p];
     },
     writeFileSync: (p, data) => { files[p] = data; },
+    renameSync: (from, to) => { files[to] = files[from]; delete files[from]; },
     mkdirSync: () => {},
   };
 }
@@ -78,6 +79,22 @@ test('a failed write is recorded, and the app keeps running', () => {
   F.setSink(restore);
   assert.ok(F.recentFailures().some((f) => f.op === 'settings.write'),
     'losing a write means the next launch forgets a change that really happened');
+});
+
+test('the write is atomic — temp file then rename', async () => {
+  // A crash or a full disk mid-write must leave the previous settings intact
+  // rather than a truncated file the next launch cannot parse. Carried over
+  // from coolify, which was the only app doing this.
+  const fs = fakeFs({ '/data/settings.json': JSON.stringify({ a: 1 }) });
+  const order = [];
+  const realWrite = fs.writeFileSync;
+  const realRename = fs.renameSync;
+  fs.writeFileSync = (p, d) => { order.push(`write ${p}`); realWrite(p, d); };
+  fs.renameSync = (f, t) => { order.push(`rename ${f} -> ${t}`); realRename(f, t); };
+  S.createSettingsStore({ dir: '/data', fs }).save({ b: 2 });
+  assert.deepStrictEqual(order, ['write /data/settings.json.tmp', 'rename /data/settings.json.tmp -> /data/settings.json']);
+  assert.ok(!('/data/settings.json.tmp' in fs.files), 'no temp file is left behind');
+  assert.deepStrictEqual(JSON.parse(fs.files['/data/settings.json']), { a: 1, b: 2 });
 });
 
 test('registerSettingsIpc attaches get and set', async () => {

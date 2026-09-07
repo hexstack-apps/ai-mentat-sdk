@@ -98,6 +98,12 @@ mutate "a failed write is silent" logic/settings.js \
   "    attempt('settings.write', () => {" \
   "    (() => {"
 
+mutate "the settings write is no longer atomic" logic/settings.js \
+  "      const tmp = \`\${filePath}.tmp\`;
+      fs.writeFileSync(tmp, JSON.stringify(merged, null, 2));
+      fs.renameSync(tmp, filePath);" \
+  "      fs.writeFileSync(filePath, JSON.stringify(merged, null, 2));"
+
 mutate "settings:set accepts a non-object patch" logic/settings.js \
   "    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {" \
   "    if (false) {"
