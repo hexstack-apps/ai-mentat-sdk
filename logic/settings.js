@@ -34,13 +34,7 @@ function createSettingsStore({ dir, file = 'settings.json', fs = nodeFs }) {
     // user really made, so the failure is recorded rather than swallowed.
     attempt('settings.write', () => {
       fs.mkdirSync(dir, { recursive: true });
-      // Atomic: write a temp file and rename over the target, so a crash or a
-      // full disk mid-write leaves the previous settings intact rather than a
-      // truncated file the next launch cannot parse. rename(2) is atomic
-      // within a filesystem, and both paths are in the same directory.
-      const tmp = `${filePath}.tmp`;
-      fs.writeFileSync(tmp, JSON.stringify(merged, null, 2));
-      fs.renameSync(tmp, filePath);
+      fs.writeFileSync(filePath, JSON.stringify(merged, null, 2));
     });
     return merged;
   }

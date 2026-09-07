@@ -84,6 +84,25 @@ mutate "cleanup runs more than once (double-kills every child)" utils/proc.js \
   "    ;"
 
 
+# ── logic/settings.js ─────────────────────────────────────────────────────
+
+mutate "a missing settings file is recorded as a failure (floods the buffer)" logic/settings.js \
+  "    if (!fs.existsSync(filePath)) return {};" \
+  "    ;"
+
+mutate "save replaces the document instead of merging a patch" logic/settings.js \
+  "    const merged = { ...load(), ...patch };" \
+  "    const merged = { ...patch };"
+
+mutate "a failed write is silent" logic/settings.js \
+  "    attempt('settings.write', () => {" \
+  "    (() => {"
+
+mutate "settings:set accepts a non-object patch" logic/settings.js \
+  "    if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {" \
+  "    if (false) {"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
