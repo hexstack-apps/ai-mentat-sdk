@@ -128,6 +128,49 @@ mutate "openPathHandler lets the renderer choose the path" logic/shell.js \
     await shell.openPath(fromRenderer || dirPath);"
 
 
+# ── logic/lima.js ─────────────────────────────────────────────────────────
+
+mutate "JSONL parsed as a single JSON blob (breaks multi-VM)" logic/lima.js \
+  "    try {
+      vms.push(JSON.parse(text));
+    } catch {
+      skipped.push(text.slice(0, 120));
+    }" \
+  "    vms.push(JSON.parse(text));"
+
+mutate "a malformed line aborts the whole parse" logic/lima.js \
+  "      skipped.push(text.slice(0, 120));" \
+  "      return { vms: [], skipped: [] };"
+
+mutate "missing VM status defaults to Running" logic/lima.js \
+  "  return found ? (found.status || 'Unknown') : 'Absent';" \
+  "  return found ? (found.status || 'Running') : 'Absent';"
+
+mutate "Stopped counts as a usable VM" logic/lima.js \
+  "  return status === 'Running';" \
+  "  return status !== 'Absent';"
+
+mutate "an unrunnable bundled binary aborts the search" logic/lima.js \
+  "  if (bundledPath && exists(bundledPath) && canRun(bundledPath)) return bundledPath;" \
+  "  if (bundledPath && exists(bundledPath)) return bundledPath;"
+
+mutate "Homebrew locations removed" logic/lima.js \
+  "const HOMEBREW_CANDIDATES = ['/opt/homebrew/bin/limactl', '/usr/local/bin/limactl'];" \
+  "const HOMEBREW_CANDIDATES = [];"
+
+mutate "nerdctl loses sudo" logic/lima.js \
+  "  return ['shell', vmName, 'sudo', 'nerdctl', ...args];" \
+  "  return ['shell', vmName, 'nerdctl', ...args];"
+
+mutate "LIMA_HOME can be overridden by the inherited environment" logic/lima.js \
+  "  return { ...baseEnv, LIMA_HOME: limaHome(homedir, dirName) };" \
+  "  return { LIMA_HOME: limaHome(homedir, dirName), ...baseEnv };"
+
+mutate "the missing-Lima message loses a remedy" logic/lima.js \
+  "    + '  • brew install lima       (uses a system-wide install)\\n'" \
+  "    + ''"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
