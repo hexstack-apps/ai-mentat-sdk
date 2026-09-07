@@ -15,15 +15,31 @@ Consumed as a **git submodule** (mounted at `sdk/`) by:
 
 ```
 logic/   app behaviour and release orchestration
+  app-scripts.js       setup / build / check implementations
   auto-update.js       electron-updater wiring (generic provider)
   publish.js           version bump → bundle → build → update feed → itch.io
   release.js           upload dist/ to GitHub (gh) and itch.io (butler)
+  settings.js          JSON settings store + settings:get/set
+  shell.js             https-only open-external; a folder-opening handler body
+  lima.js              Lima resolution, JSONL VM parsing, nerdctl argv
+  tunnel.js            cloudflared config over an ingress LIST
+  tunnel-ipc.js        the nine cloudflared/tunnel handlers
+  mcp.js               Claude Code MCP registration mechanics
+  pty.js               embedded terminal IPC, asar-aware helper path
 ui/
-  update-bar.js        "Restart to update" notification bar (plain <script>)
+  update-bar.js        "Restart to update" bar (plain <script>)
+  window.js            createWindow(config) — secure defaults, no DevTools
+  base.css             the shell five apps share
 utils/
   data-dir.js          resolves <root>/.hexstack-app/<app-name>/data
-  bundle-electron.js   esbuild bundling of the Electron main process
+  bundle-electron.js   esbuild bundling; accepts .js or .cjs entries
+  env.js               PATH construction and argv-array exec helpers
+  failsafe.js          suppress-and-record helpers
+  proc.js              process-group termination, run-once cleanup
   pty-helper.py        real PTY bridge, no native Node modules
+build/                 signing entitlements (mac, mas, mas.inherit)
+vendor/                xterm.js, xterm.css, addon-fit.js
+test/discriminates.sh  mutation harness
 ```
 
 Every file here was **extracted verbatim** from code that already existed
@@ -31,9 +47,14 @@ identically in 2–3 of the consuming repos — nothing was invented for the sak
 having an SDK. `utils/data-dir.js` is the sole new module: it defines the shared
 data-directory contract that all four apps moved to.
 
-There is deliberately **no shared design system**: only one app defined CSS
-custom properties, so a common stylesheet would have been an abstraction with a
-single user.
+`ui/base.css` ships the shell all five Electron apps share — top bar, tab bar,
+panels, cards, rows, status dots, buttons, the loading overlay, FAQ items and
+the terminal overlay. This **reverses an earlier decision recorded here**: when
+only one app defined CSS custom properties, a shared sheet would have had a
+single user. Five apps now share 76–94% of one stylesheet, and every one of its
+74 selectors is used by at least three of them, so it earns its place. An app
+loads `base.css` first and keeps its own `app.css` for what is genuinely its
+own; do not add a rule here that only one app uses.
 
 ## Bundling the main process
 
@@ -95,3 +116,22 @@ the traversal guard fails 1.
 ## License
 
 MIT
+
+## Module rules
+
+Two properties hold for every module added in the 2026-09 extraction, and both
+are checked by `npm test` plus `npm run test:mutation`:
+
+1. **No module requires `electron` directly.** Electron objects (`ipcMain`,
+   `shell`, `BrowserWindow`) are passed in as parameters. That is what lets the
+   whole suite run under plain `node --test` with no display and no Electron
+   runtime.
+2. **Every module has a sibling `<name>.test.js`.**
+
+**Known exceptions, all predating the extraction:** `logic/auto-update.js`
+requires `electron` for `ipcMain` and has no test; `logic/app-scripts.js`,
+`logic/publish.js`, `logic/release.js` and `ui/update-bar.js` have no tests.
+Fixing the first would change `setupAutoUpdate(mainWindow)`, which four
+shipping apps call, so it is deliberately left for a change that has a reason
+to touch those apps. New modules do not get to join this list.
+
