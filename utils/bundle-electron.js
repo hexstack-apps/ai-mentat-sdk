@@ -35,8 +35,33 @@
 const path = require('path');
 const fs = require('fs');
 
-/** The file every consuming app has at its root, and the SDK never has. */
-const ENTRY_NAME = 'electron-main.js';
+/**
+ * Entry filenames every consuming app has at its root, in resolution order.
+ * `.cjs` exists for an ESM package: dejavu sets `"type": "module"`, so its
+ * CommonJS wrapper cannot be named `.js`.
+ */
+const ENTRY_NAMES = ['electron-main.js', 'electron-main.cjs'];
+/** Kept so existing importers and tests referring to the singular still work. */
+const ENTRY_NAME = ENTRY_NAMES[0];
+
+/** The entry this project uses, or null. `.js` wins when both exist. */
+function findEntry(dir, exists) {
+  for (const name of ENTRY_NAMES) {
+    const p = path.join(dir, name);
+    if (exists(p)) return p;
+  }
+  return null;
+}
+
+/**
+ * Bundle path for an entry. The extension is carried over: a `.js` bundle in a
+ * `"type": "module"` package would be parsed as ESM while esbuild emits CJS,
+ * so the app would fail to boot.
+ */
+function outputFor(entryPath) {
+  const ext = path.extname(entryPath);
+  return entryPath.slice(0, -ext.length) + '.bundle' + ext;
+}
 
 /**
  * Find the app directory to bundle.
@@ -65,16 +90,16 @@ function resolveProjectDir(o = {}) {
   // finds it in the npm layout.
   let dir = path.resolve(startDir);
   for (;;) {
-    if (exists(path.join(dir, ENTRY_NAME))) return dir;
+    if (findEntry(dir, exists) !== null) return dir;
     const parent = path.dirname(dir);
     if (parent === dir) break; // filesystem root
     dir = parent;
   }
 
-  if (exists(path.join(cwd, ENTRY_NAME))) return path.resolve(cwd);
+  if (findEntry(cwd, exists) !== null) return path.resolve(cwd);
 
   throw new Error(
-    `bundle-electron: no ${ENTRY_NAME} found.\n`
+    `bundle-electron: no ${ENTRY_NAMES.join(' or ')} found.\n`
     + `  Searched upwards from ${path.resolve(startDir)} and in ${path.resolve(cwd)}.\n`
     + `  Run this from a consuming app, or pass the project dir:\n`
     + '    node sdk/utils/bundle-electron.js /path/to/app',
@@ -134,8 +159,8 @@ function externalsFor(projectDir) {
 
 function main() {
   const projectDir = resolveProjectDir({ arg: process.argv[2] });
-  const entry = path.join(projectDir, ENTRY_NAME);
-  const out = path.join(projectDir, 'electron-main.bundle.js');
+  const entry = findEntry(projectDir, (p) => fs.existsSync(p));
+  const out = outputFor(entry);
 
   copyRendererFiles(projectDir);
 
@@ -165,7 +190,10 @@ function main() {
   }
 }
 
-module.exports = { resolveProjectDir, copyRendererFiles, externalsFor, ENTRY_NAME, ALWAYS_EXTERNAL, RENDERER_FILES };
+module.exports = {
+  resolveProjectDir, copyRendererFiles, externalsFor, findEntry, outputFor,
+  ENTRY_NAME, ENTRY_NAMES, ALWAYS_EXTERNAL, RENDERER_FILES,
+};
 
 // Only build when run as a script, so the helpers above are testable.
 if (require.main === module) {

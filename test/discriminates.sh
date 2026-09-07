@@ -316,6 +316,21 @@ mutate "stripFrameHeaders removes unrelated headers too" ui/window.js \
   "    if (stripFrameHeaders) {"
 
 
+# ── utils/bundle-electron.js ──────────────────────────────────────────────
+
+mutate "the .cjs entry is no longer recognised (dejavu cannot bundle)" utils/bundle-electron.js \
+  "const ENTRY_NAMES = ['electron-main.js', 'electron-main.cjs'];" \
+  "const ENTRY_NAMES = ['electron-main.js'];"
+
+mutate "the bundle extension no longer follows the entry" utils/bundle-electron.js \
+  "  return entryPath.slice(0, -ext.length) + '.bundle' + ext;" \
+  "  return entryPath.replace(/\.[cm]?js\$/, '.bundle.js');"
+
+mutate ".cjs wins over .js when both exist" utils/bundle-electron.js \
+  "const ENTRY_NAMES = ['electron-main.js', 'electron-main.cjs'];" \
+  "const ENTRY_NAMES = ['electron-main.cjs', 'electron-main.js'];"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1

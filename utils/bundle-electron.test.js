@@ -83,7 +83,8 @@ test('throws a message naming both places it looked', () => {
   assert.throws(
     () => B.resolveProjectDir({ startDir: '/a/b/c', cwd: '/d/e', exists: () => false }),
     (e) => {
-      assert.match(e.message, /no electron-main\.js found/);
+      assert.match(e.message, /no electron-main\.js or electron-main\.cjs found/,
+        'the error names every entry filename it looked for');
       assert.match(e.message, /\/a\/b\/c/);
       assert.match(e.message, /\/d\/e/);
       assert.match(e.message, /pass the project dir/);
@@ -127,4 +128,35 @@ test('the update bar is copied from ui/, where it actually lives', () => {
   const fs = require('fs');
   assert.ok(fs.existsSync(path.resolve(__dirname, spec.from)),
     `${spec.from} is missing from the SDK`);
+});
+
+// ─── .cjs entries (dejavu is "type": "module") ───────────────────────────
+
+test('an electron-main.cjs entry is found when there is no .js', () => {
+  const dir = B.resolveProjectDir({
+    startDir: '/repo/sdk/utils',
+    cwd: '/x',
+    exists: (p) => p === '/repo/electron-main.cjs',
+  });
+  assert.strictEqual(dir, '/repo');
+});
+
+test('a .js entry still wins when both exist', () => {
+  // Only dejavu is ESM; every other app keeps electron-main.js.
+  assert.strictEqual(B.findEntry('/repo', () => true), '/repo/electron-main.js');
+});
+
+test('findEntry returns null when neither is present', () => {
+  assert.strictEqual(B.findEntry('/repo', () => false), null);
+});
+
+test('the bundle extension follows the entry extension', () => {
+  // A .js bundle in a "type": "module" package is parsed as ESM, and esbuild
+  // emits CommonJS — the app would fail to boot.
+  assert.strictEqual(B.outputFor('/repo/electron-main.js'), '/repo/electron-main.bundle.js');
+  assert.strictEqual(B.outputFor('/repo/electron-main.cjs'), '/repo/electron-main.bundle.cjs');
+});
+
+test('ENTRY_NAMES lists both, in resolution order', () => {
+  assert.deepStrictEqual(B.ENTRY_NAMES, ['electron-main.js', 'electron-main.cjs']);
 });
