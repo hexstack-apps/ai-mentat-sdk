@@ -171,6 +171,49 @@ mutate "the missing-Lima message loses a remedy" logic/lima.js \
   "    + ''"
 
 
+# ── logic/tunnel.js ───────────────────────────────────────────────────────
+
+mutate "ingress continuation keys ignored (order-dependent parse returns)" logic/tunnel.js \
+  "    if (kv && current) applyKey(current, kv[1], kv[2]);" \
+  "    if (false) applyKey(current, kv[1], kv[2]);"
+
+mutate "findIngress ignores the scheme (udp game rides an http ingress)" logic/tunnel.js \
+  "  const wanted = normalizeService(\`\${scheme}://localhost:\${port}\`);" \
+  "  const wanted = normalizeService(\`http://localhost:\${port}\`);"
+
+mutate "findIngress returns the first hostname regardless of service" logic/tunnel.js \
+  "    (e) => e.service && normalizeService(e.service) === wanted && e.hostname," \
+  "    (e) => e.hostname,"
+
+mutate "isConfigured accepts a partially configured multi-service tunnel" logic/tunnel.js \
+  "  return services.every((s) => findIngress(config, s) !== null);" \
+  "  return services.some((s) => findIngress(config, s) !== null);"
+
+mutate "isConfigured no longer requires a tunnel id" logic/tunnel.js \
+  "  if (!config || !config.tunnel) return false;" \
+  "  if (!config) return false;"
+
+mutate "127.0.0.1 no longer recognised as localhost" logic/tunnel.js \
+  "  return String(service).trim().replace('127.0.0.1', 'localhost').replace(/\/+\$/, '');" \
+  "  return String(service).trim().replace(/\/+\$/, '');"
+
+mutate "trailing comments left on the hostname" logic/tunnel.js \
+  "  if (hash !== -1) v = v.slice(0, hash === 0 ? 0 : hash).trim();" \
+  "  ;"
+
+mutate "render drops the mandatory catch-all rule" logic/tunnel.js \
+  "  lines.push(\`  - service: \${CLOUDFLARED_SERVICE_404}\`, '', 'metrics: 127.0.0.1:0', '');" \
+  "  lines.push('', 'metrics: 127.0.0.1:0', '');"
+
+mutate "render only ever writes the first ingress entry" logic/tunnel.js \
+  "  for (const entry of ingress) {" \
+  "  for (const entry of ingress.slice(0, 1)) {"
+
+mutate "hostname validation accepts anything (shell injection)" logic/tunnel.js \
+  "  return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+\$/i.test(host);" \
+  "  return true;"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
