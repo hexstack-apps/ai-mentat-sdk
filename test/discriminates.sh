@@ -266,6 +266,29 @@ mutate "install stops writing the slash-command doc" logic/mcp.js \
   "      ;"
 
 
+# ── logic/pty.js ──────────────────────────────────────────────────────────
+
+mutate "the asar path is not rewritten (python cannot exec inside the archive)" logic/pty.js \
+  "  if (isPackaged || p.includes('app.asar')) return p.replace('app.asar', 'app.asar.unpacked');" \
+  "  ;"
+
+mutate "a previous pty session leaks instead of being replaced" logic/pty.js \
+  "        attempt('pty.killPrevious', () => ptyProcess.kill());" \
+  "        ;"
+
+mutate "pty:write forwards any type the renderer sends" logic/pty.js \
+  "    if (ptyProcess && !ptyProcess.killed && typeof data === 'string') ptyProcess.stdin.write(data);" \
+  "    if (ptyProcess && !ptyProcess.killed) ptyProcess.stdin.write(data);"
+
+mutate "skipPerms flag lands after the slash command" logic/pty.js \
+  "      const tail = skipPerms ? [SKIP_PERMS_FLAG, ...args] : [...args];" \
+  "      const tail = skipPerms ? [...args, SKIP_PERMS_FLAG] : [...args];"
+
+mutate "POSIX bypasses the PTY helper (no real TTY)" logic/pty.js \
+  "        ptyProcess = spawn('python3', [helperPath, command, ...tail]," \
+  "        ptyProcess = spawn(command, tail,"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
