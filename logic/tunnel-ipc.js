@@ -85,16 +85,7 @@ function registerTunnelIpc(ipcMain, config) {
       const host = T.findIngress(cfg, s);
       if (host) hostnames[s.name] = host;
     }
-    // `hostname` is the PRIMARY service's, alongside the per-service map.
-    // Renderers that predate multi-service tunnels read the singular form, and
-    // tunnel:start already treats services[0] as primary — so this is the same
-    // concept, not a compatibility shim.
-    return {
-      configured: T.isConfigured(cfg, services),
-      tunnelName: cfg.tunnel,
-      hostname: T.findIngress(cfg, services[0]),
-      hostnames,
-    };
+    return { configured: T.isConfigured(cfg, services), tunnelName: cfg.tunnel, hostnames };
   });
 
   ipcMain.handle('cloudflared:setup-tunnel', async (_, domain) => {

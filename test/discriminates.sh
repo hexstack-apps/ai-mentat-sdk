@@ -214,6 +214,25 @@ mutate "hostname validation accepts anything (shell injection)" logic/tunnel.js 
   "  return true;"
 
 
+# ── logic/tunnel-ipc.js ───────────────────────────────────────────────────
+
+mutate "setup-tunnel skips hostname validation (command injection)" logic/tunnel-ipc.js \
+  "    if (!T.isValidHostname(hostname)) {" \
+  "    if (false) {"
+
+mutate "setup-tunnel writes only the first service's ingress" logic/tunnel-ipc.js \
+  "      const ingress = services.map((s, i) => ({" \
+  "      const ingress = services.slice(0, 1).map((s, i) => ({"
+
+mutate "setup-tunnel stops persisting the applied domain" logic/tunnel-ipc.js \
+  "      settings.save({ publicDomain: hostname });" \
+  "      ;"
+
+mutate "tunnel:start proceeds with no configured hostname" logic/tunnel-ipc.js \
+  "    if (!primary) return { success: false, error: 'No tunnel configured — complete setup first' };" \
+  "    ;"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
