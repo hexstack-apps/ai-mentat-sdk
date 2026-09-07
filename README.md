@@ -7,6 +7,8 @@ Consumed as a **git submodule** (mounted at `sdk/`) by:
 - [ai-mentat-coolify-local](https://github.com/hexstack-apps/ai-mentat-coolify-local)
 - [ai-mentat-interviews](https://github.com/hexstack-apps/ai-mentat-interviews)
 - [ai-mentat-local-studio](https://github.com/hexstack-apps/ai-mentat-local-studio)
+- [ai-mentat-minecraft](https://github.com/hexstack-apps/ai-mentat-minecraft)
+- [ai-mentat-n8n](https://github.com/hexstack-apps/ai-mentat-n8n)
 - [ai-mentat-roblox-studio](https://github.com/hexstack-apps/ai-mentat-roblox-studio)
 
 ## Structure
@@ -32,6 +34,31 @@ data-directory contract that all four apps moved to.
 There is deliberately **no shared design system**: only one app defined CSS
 custom properties, so a common stylesheet would have been an abstraction with a
 single user.
+
+## Bundling the main process
+
+```sh
+node sdk/utils/bundle-electron.js          # finds the app automatically
+node sdk/utils/bundle-electron.js /path    # or bundle a specific one
+```
+
+The project directory is located by **walking up from this file** until a
+directory containing `electron-main.js` is found, so it is correct whether the
+SDK is mounted at `sdk/` as a submodule or installed at
+`node_modules/ai-mentat-sdk/`.
+
+It used to default to `path.resolve(__dirname, '..')`, which was the repo root
+back when this file lived at `__shared__/scripts/` in the monorepo and is
+`<repo>/sdk` at `sdk/utils/`. Since every consuming repo invokes it with no
+argument, `bundle`, `gui` and every `build:*` script was failing with
+`Could not resolve ".../sdk/electron-main.js"`. A hardcoded `'..', '..'` would
+have moved the same assumption one level rather than removing it.
+
+`ui/update-bar.js` is copied into the app as **`update-ui.js`**, which is the
+name the consuming apps' `app.html` references and their `.gitignore` excludes.
+That copy previously looked for `update-ui.js` inside `utils/`, where it has
+never existed, so it silently copied nothing and the "Restart to update" bar
+never appeared in any app.
 
 ## The data directory contract
 
