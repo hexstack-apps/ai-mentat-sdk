@@ -19,8 +19,6 @@ implementation. Bring `ai-mentat-dejavu` into the family's packaging shape.
 | Sequencing | **Approach B — whole SDK first, then one migration per app** | The shared surface is designed with no consumer proving it. A wrong boundary surfaces during migration and costs an SDK revision plus a re-bump. |
 | Branching | **main** | No review gate before changes land. |
 | dejavu module format | **Rename its wrapper to `electron-main.cjs`** | Requires the SDK bundler to accept a `.cjs` entry and emit a `.cjs` bundle. |
-| dejavu auto-update | **None** | Overrules the design's initial proposal; dejavu ships packaged with no update path. |
-| DevTools on dev launch | **Removed everywhere, no opt-in** | Five apps lose their auto-open line; developers use the platform shortcut. |
 
 The threshold and test-safety choices were made after the alternatives and
 their costs were presented. They are recorded here so a later reader does not
@@ -303,15 +301,6 @@ Secure defaults: `nodeIntegration: false`, `contextIsolation: true`,
 `webSecurity: true`, `allowRunningInsecureContent: false`. `sandbox: false` is
 kept, as all five apps rely on a preload that needs it.
 
-**DevTools are never opened automatically, and there is no option to.** Five
-of the six apps currently run
-`if (!app.isPackaged) mainWindow.webContents.openDevTools()` on every dev
-launch (`local-studio` with `{ mode: 'detach' }`); dejavu has no such line.
-All five lose it. No config flag replaces it: Electron already binds
-Cmd+Opt+I / Ctrl+Shift+I, so a knob would be machinery for something the
-platform provides — and an inspector that opens itself is noise in every
-screenshot and every driven GUI session.
-
 `headerRewrite` is scoped to named origins. Two apps embed a localhost HTTP
 service in an iframe and must strip `X-Frame-Options` and the
 `frame-ancestors` CSP for that origin, plus set `SameSite=None` on its
@@ -373,7 +362,6 @@ tests. Each row is a behaviour difference the extraction resolves.
 | MCP server identity | three unrelated servers and commands | Per-app `addArgs`; only mechanics shared. |
 | Window size/title | five different | Config object. |
 | failsafe sink name | JS `setSink`; dejavu TS `setFailureSink` | Both kept; dejavu's copy not merged. |
-| DevTools auto-open | 4 apps plain, `local-studio` detached, dejavu none | Removed from all; none opt in. |
 
 ## dejavu — bringing it into the family
 
@@ -394,15 +382,12 @@ What changes:
 - Adopts `build/` entitlements, an electron-builder config and signing block
   matching the family, and the four standard scripts
   (`setup`, `run`, `build`, `check`) via `logic/app-scripts.js`.
-- **No auto-update.** The wrapper's original "deliberately no auto-update"
-  decision stands, at the maintainer's instruction. The design initially
-  proposed adding it on the reasoning that a packaged app needs an update
-  path; that was overruled, and correctly recorded here rather than quietly
-  dropped. dejavu therefore adopts `build/` and the family scripts but not
-  `logic/auto-update.js`.
+- Gains `logic/auto-update.js`. The original "no auto-update" call was correct
+  for an unpackaged app; once it ships a DMG, an update path is part of
+  shipping it.
 
 What does **not** change: no IPC surface is added (there are still no
-privileged operations to expose), no auto-update, `contextIsolation` stays on,
+privileged operations to expose), `contextIsolation` stays on,
 `nodeIntegration` stays off, and `src/failsafe.ts` stays where it is.
 
 `interviews` is out of scope: electron-forge, no `electron-main.js`, and it
@@ -418,8 +403,6 @@ files it packages.
   additions above.
 - No merge of dejavu's browser-side failsafe.
 - No new features.
-- No auto-update for dejavu.
-- No DevTools auto-open, and no setting to restore it.
 
 ## Testing
 
