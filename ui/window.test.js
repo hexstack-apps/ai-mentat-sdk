@@ -104,6 +104,14 @@ test('size, title and backgroundColor pass through', () => {
   assert.strictEqual(win.opts.show, false, 'shown on ready-to-show, not before');
 });
 
+test('a minimum size passes through when an app sets one', () => {
+  const win = W.createWindow({ ...base, minWidth: 940, minHeight: 640 });
+  assert.strictEqual(win.opts.minWidth, 940);
+  assert.strictEqual(win.opts.minHeight, 640);
+  // and is absent, not undefined, when it does not
+  assert.ok(!('minWidth' in W.createWindow({ ...base }).opts));
+});
+
 test('rewriteHeaders strips only the framing headers it is asked to', () => {
   const out = W.rewriteHeaders(
     {
