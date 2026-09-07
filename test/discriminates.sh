@@ -43,6 +43,27 @@ mutate "recentFailures exposes the live buffer" utils/failsafe.js \
   "  return recent.slice();" \
   "  return recent;"
 
+# ── utils/env.js ──────────────────────────────────────────────────────────
+
+mutate "PATH appended instead of prepended (system copies win)" utils/env.js \
+  "  return base ? extra.join(sep) + sep + base : extra.join(sep);" \
+  "  return base ? base + sep + extra.join(sep) : extra.join(sep);"
+
+mutate "empty-PATH guard dropped (trailing separator = cwd on PATH)" utils/env.js \
+  "  const base = envPath || (isWin ? '' : '/usr/bin:/bin');" \
+  "  const base = envPath;"
+
+mutate "extra can no longer override the base environment" utils/env.js \
+  "    ...baseEnv,
+    ...extra," \
+  "    ...extra,
+    ...baseEnv,"
+
+mutate "tryRun rethrows instead of returning null" utils/env.js \
+  "  return quiet(op, () => run(bin, args, opts), null);" \
+  "  return run(bin, args, opts);"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
