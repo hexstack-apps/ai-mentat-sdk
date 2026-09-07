@@ -51,7 +51,7 @@ function rewriteHeaders(responseHeaders, { stripFrameHeaders = false, sameSiteNo
 
 function createWindow(config) {
   const {
-    BrowserWindow, width, height, minWidth, minHeight, title, icon, backgroundColor,
+    BrowserWindow, width, height, title, icon, backgroundColor,
     preload, load, webPreferences = {}, headerRewrite = null, onReady = null,
   } = config;
 
@@ -66,10 +66,6 @@ function createWindow(config) {
     show: false,   // shown on ready-to-show, so no white flash
     webPreferences: buildWebPreferences(webPreferences, preload),
   };
-  // A window that can be dragged smaller than its layout survives is a real
-  // usability bug, so the floor passes through when an app sets one.
-  if (minWidth) options.minWidth = minWidth;
-  if (minHeight) options.minHeight = minHeight;
   if (icon) options.icon = icon;
   if (backgroundColor) options.backgroundColor = backgroundColor;
 

@@ -289,6 +289,33 @@ mutate "POSIX bypasses the PTY helper (no real TTY)" logic/pty.js \
   "        ptyProcess = spawn(command, tail,"
 
 
+# ── ui/window.js ──────────────────────────────────────────────────────────
+
+mutate "webSecurity defaults to off" ui/window.js \
+  "  webSecurity: true," \
+  "  webSecurity: false,"
+
+mutate "contextIsolation defaults to off" ui/window.js \
+  "  contextIsolation: true," \
+  "  contextIsolation: false,"
+
+mutate "app overrides can no longer opt out of a default" ui/window.js \
+  "  return { ...SECURE_DEFAULTS, ...overrides, preload };" \
+  "  return { ...overrides, ...SECURE_DEFAULTS, preload };"
+
+mutate "DevTools open themselves again" ui/window.js \
+  "    win.show();" \
+  "    win.show(); win.webContents.openDevTools();"
+
+mutate "header rewriting is allowed with no url filter (<all_urls>)" ui/window.js \
+  "    if (!Array.isArray(headerRewrite.urls) || headerRewrite.urls.length === 0) {" \
+  "    if (false) {"
+
+mutate "stripFrameHeaders removes unrelated headers too" ui/window.js \
+  "    if (stripFrameHeaders && (lower === 'x-frame-options' || lower === 'content-security-policy')) {" \
+  "    if (stripFrameHeaders) {"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
