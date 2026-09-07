@@ -228,6 +228,10 @@ mutate "setup-tunnel stops persisting the applied domain" logic/tunnel-ipc.js \
   "      settings.save({ publicDomain: hostname });" \
   "      ;"
 
+mutate "tunnel-status drops the singular primary hostname" logic/tunnel-ipc.js \
+  "      hostname: T.findIngress(cfg, services[0])," \
+  "      hostname: undefined,"
+
 mutate "tunnel:start proceeds with no configured hostname" logic/tunnel-ipc.js \
   "    if (!primary) return { success: false, error: 'No tunnel configured — complete setup first' };" \
   "    ;"

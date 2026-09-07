@@ -69,6 +69,33 @@ ingress:
   assert.strictEqual(r.configured, true);
   assert.strictEqual(r.tunnelName, 'abc');
   assert.deepStrictEqual(r.hostnames, { web: 'n8n.example.com' });
+  assert.strictEqual(r.hostname, 'n8n.example.com',
+    'the primary hostname is also returned singular: renderers that predate '
+    + 'multi-service tunnels read that form');
+});
+
+test('tunnel-status reports the FIRST service as the primary hostname', async () => {
+  const h = harness({
+    config: {
+      services: [
+        { name: 'web', scheme: 'http', port: 8000 },
+        { name: 'ssh', scheme: 'ssh', port: 2222 },
+      ],
+    },
+    files: {
+      '/home/u/.cloudflared/config.yml': `tunnel: abc
+ingress:
+  - hostname: app.example.com
+    service: http://localhost:8000
+  - hostname: ssh.example.com
+    service: ssh://localhost:2222
+  - service: http_status:404
+`,
+    },
+  });
+  const r = await h.handlers['cloudflared:tunnel-status']();
+  assert.strictEqual(r.hostname, 'app.example.com');
+  assert.deepStrictEqual(r.hostnames, { web: 'app.example.com', ssh: 'ssh.example.com' });
 });
 
 test('setup-tunnel refuses an invalid hostname before running anything', async () => {
