@@ -64,6 +64,26 @@ mutate "tryRun rethrows instead of returning null" utils/env.js \
   "  return run(bin, args, opts);"
 
 
+# ── utils/proc.js ─────────────────────────────────────────────────────────
+
+mutate "kill targets the pid instead of the process group" utils/proc.js \
+  "      kill(-proc.pid, 'SIGTERM');" \
+  "      kill(proc.pid, 'SIGTERM');"
+
+mutate "no SIGKILL follow-up (a hung child survives shutdown)" utils/proc.js \
+  "        if (platform !== 'win32') kill(-proc.pid, 'SIGKILL');" \
+  "        ;"
+
+mutate "taskkill loses /T (Windows grandchildren survive)" utils/proc.js \
+  "      if (runFn) runFn('taskkill', ['/pid', String(proc.pid), '/T', '/F'], { stdio: 'ignore' });" \
+  "      if (runFn) runFn('taskkill', ['/pid', String(proc.pid), '/F'], { stdio: 'ignore' });"
+
+mutate "cleanup runs more than once (double-kills every child)" utils/proc.js \
+  "    if (done) return undefined;
+    done = true;" \
+  "    ;"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
