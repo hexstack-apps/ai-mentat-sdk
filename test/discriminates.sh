@@ -233,6 +233,39 @@ mutate "tunnel:start proceeds with no configured hostname" logic/tunnel-ipc.js \
   "    ;"
 
 
+# ── logic/mcp.js ──────────────────────────────────────────────────────────
+
+mutate "project-scope registration no longer detected (install duplicates)" logic/mcp.js \
+  "  if (data.projects && typeof data.projects === 'object') {" \
+  "  if (false) {"
+
+mutate "a malformed .claude.json throws instead of reading as absent" logic/mcp.js \
+  "    try {
+      data = JSON.parse(data);
+    } catch {
+      return false;
+    }" \
+  "    data = JSON.parse(data);"
+
+mutate "only the user scope is cleared before install" logic/mcp.js \
+  "const MCP_SCOPES = ['user', 'local', 'project'];" \
+  "const MCP_SCOPES = ['user'];"
+
+mutate "a failing scope removal aborts the rest" logic/mcp.js \
+  "    quiet(
+      \`mcp.remove.\${scope}\`,
+      () => run('claude', ['mcp', 'remove', serverName, '-s', scope],
+        { timeout: 15000, stdio: 'pipe', cwd }),
+      null,
+    );" \
+  "    run('claude', ['mcp', 'remove', serverName, '-s', scope],
+      { timeout: 15000, stdio: 'pipe', cwd });"
+
+mutate "install stops writing the slash-command doc" logic/mcp.js \
+  "      writeCommand();" \
+  "      ;"
+
+
 echo
 echo "caught $PASS / $((PASS+FAIL))"
 [ "$FAIL" -eq 0 ] || exit 1
